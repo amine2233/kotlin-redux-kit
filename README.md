@@ -12,7 +12,7 @@ Minimal Redux for Kotlin and Jetpack Compose, built on coroutines and `StateFlow
 ```toml
 # gradle/libs.versions.toml
 [versions]
-redux-kit = "0.1.0"
+redux-kit = "1.0.0"
 
 [libraries]
 redux = { module = "io.github.amine2233:redux", version.ref = "redux-kit" }
@@ -177,6 +177,84 @@ scenario(AppState(), appReducer, listOf(searchMiddleware.lifted(counterLens, cou
 val forwarded = loadMiddleware.forwardedActions(CounterState(), CounterAction.LoadRequested)
 assertEquals(listOf(CounterAction.LoadStarted, CounterAction.LoadSucceeded(42)), forwarded)
 ```
+
+## AI agent skill
+
+This repository ships a `kotlin-redux-kit` skill (`skills/kotlin-redux-kit/`) that teaches coding agents how to
+build and test features with this library. It is a valid [Agent Skill](https://skills.sh) and a
+[Claude Code](https://claude.com/claude-code) plugin, so it installs into any harness.
+
+### With the `skills` CLI (any agent)
+
+[`skills`](https://github.com/vercel-labs/skills) installs the same `SKILL.md` into the skills directory of every
+agent it knows (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, OpenCode, Windsurf, Cline, Zed, Junie, …).
+
+```sh
+# see what the repo provides
+npx skills add amine2233/kotlin-redux-kit --list
+
+# interactive: pick agents and scope (project or global)
+npx skills add amine2233/kotlin-redux-kit
+
+# project-level (committed with the app, shared with the team), specific agents
+npx skills add amine2233/kotlin-redux-kit -a claude-code -a codex -a cursor -y
+
+# global (available in every project)
+npx skills add amine2233/kotlin-redux-kit -g -a claude-code -a gemini-cli -a github-copilot -y
+
+# every supported agent, no prompts
+npx skills add amine2233/kotlin-redux-kit --all
+
+# pin the skill to a library release
+npx skills add https://github.com/amine2233/kotlin-redux-kit/tree/v1.0.0 -a claude-code -y
+
+# later
+npx skills update
+npx skills remove kotlin-redux-kit
+```
+
+Where it lands, per agent (project scope → global scope):
+
+| Agent | `--agent` | Project | Global |
+|---|---|---|---|
+| Claude Code | `claude-code` | `.claude/skills/` | `~/.claude/skills/` |
+| Codex | `codex` | `.agents/skills/` | `~/.codex/skills/` |
+| Cursor | `cursor` | `.agents/skills/` | `~/.cursor/skills/` |
+| Gemini CLI | `gemini-cli` | `.agents/skills/` | `~/.gemini/skills/` |
+| GitHub Copilot | `github-copilot` | `.agents/skills/` | `~/.copilot/skills/` |
+| OpenCode | `opencode` | `.agents/skills/` | `~/.config/opencode/skills/` |
+| Windsurf | `windsurf` | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
+| Cline / Zed / Warp / Kimi | `cline`, `zed`, `warp`, `kimi-code-cli` | `.agents/skills/` | `~/.agents/skills/` |
+| Junie (JetBrains) | `junie` | `.junie/skills/` | `~/.junie/skills/` |
+| Amp / universal | `amp`, `universal` | `.agents/skills/` | `~/.config/agents/skills/` |
+
+Full list: `npx skills add --help` or the [supported agents](https://github.com/vercel-labs/skills#supported-agents)
+table. Add `--copy` when the agent's sandbox does not follow symlinks.
+
+Without installing anything, `npx skills use amine2233/kotlin-redux-kit@kotlin-redux-kit` prints a prompt that
+loads the skill for a one-off session.
+
+### As a Claude Code plugin
+
+```
+/plugin marketplace add amine2233/kotlin-redux-kit
+/plugin install kotlin-redux-kit@kotlin-redux-kit
+```
+
+The plugin form is versioned (`.claude-plugin/plugin.json`) and updates through `/plugin`; the `skills` CLI form
+tracks the repo through `npx skills update`.
+
+### Manual
+
+Copy `skills/kotlin-redux-kit/` into your agent's skills directory (see the table above), or reference the raw
+`SKILL.md` from your agent's instructions file (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, …).
+
+### Versioning
+
+The skill follows the library: every release rewrites `.claude-plugin/plugin.json`, the `redux-kit` version in this
+README and in `skills/kotlin-redux-kit/references/installation.md` (`bumpversion.sh`, run by semantic-release
+before the release commit). Skill-only changes use `docs(skill):` commits and ship with the next library release;
+use `feat(skill):` to force a minor release.
 
 ## Development
 
