@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.compose) apply false
 }
 
 allprojects {
@@ -7,7 +9,7 @@ allprojects {
     version = (findProperty("version") as String?)?.takeIf { it.isNotBlank() && it != "unspecified" } ?: "0.1.0-SNAPSHOT"
 }
 
-subprojects {
+configure(listOf(project(":redux"), project(":redux-test"))) {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "maven-publish")
 
