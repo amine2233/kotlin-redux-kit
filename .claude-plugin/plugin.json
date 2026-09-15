@@ -1,0 +1,13 @@
+{
+  "name": "kotlin-redux-kit",
+  "version": "1.0.0",
+  "description": "Skill for building Kotlin / Jetpack Compose features with the kotlin-redux-kit library: Store, Reducer, Middleware, Lens/Prism composition, undo/redo and the redux-test scenario DSL.",
+  "author": {
+    "name": "Amine Bensalah",
+    "url": "https://github.com/amine2233"
+  },
+  "homepage": "https://github.com/amine2233/kotlin-redux-kit",
+  "repository": "https://github.com/amine2233/kotlin-redux-kit",
+  "license": "MIT",
+  "keywords": ["kotlin", "redux", "jetpack-compose", "unidirectional-flow", "state-management", "testing"]
+}

@@ -5,10 +5,11 @@
     ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
     ["@semantic-release/exec", {
+      "prepareCmd": "./bumpversion.sh \"${lastRelease.version}\" \"${nextRelease.version}\" \"${nextRelease.type}\"",
       "publishCmd": "mise run publish --version ${nextRelease.version}"
     }],
     ["@semantic-release/git", {
-      "assets": ["CHANGELOG.md"],
+      "assets": ["CHANGELOG.md", "README.md", ".claude-plugin/plugin.json", "skills/**/*.md"],
       "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
     }],
     ["@semantic-release/github", {
