@@ -97,6 +97,26 @@ val appMiddlewares = listOf(analytics.lifted(counterLens, counterPrism))
 Non-matching actions are left untouched by reducers and passed straight to `next` by middlewares.
 `identityReducer()` is available as a no-op reducer.
 
+### Undo / redo
+
+`UndoableStore` is a `Store<Undoable<State>, UndoableAction<A>>`: the state carries `present`,
+`past`, `future`, `canUndo`, `canRedo`; your reducer and middlewares stay unchanged.
+
+```kotlin
+val store = UndoableStore(CounterState(), counterReducer, listOf(analytics), scope = viewModelScope, historyLimit = 50)
+
+store.dispatch(CounterAction.Increment)   // recorded; a no-op action records nothing
+store.undo()
+store.redo()
+
+val state by store.state.collectAsStateWithLifecycle()
+Button(onClick = store::undo, enabled = state.canUndo) { Text("Undo") }
+Text("${state.present.count}")
+```
+
+`counterReducer.undoable()`, `presentLens()` and `performPrism()` are public, so the same state
+works with `scenario(Undoable(initial), reducer.undoable(), ...)` in tests.
+
 ### Compose
 
 `Store.state` is a `StateFlow`, so no extra module is needed:

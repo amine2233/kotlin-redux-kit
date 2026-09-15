@@ -1,6 +1,11 @@
 package io.github.amine2233.redux.test
 
+import io.github.amine2233.redux.Undoable
+import io.github.amine2233.redux.UndoableAction
 import io.github.amine2233.redux.lifted
+import io.github.amine2233.redux.performPrism
+import io.github.amine2233.redux.presentLens
+import io.github.amine2233.redux.undoable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -66,6 +71,18 @@ class ReduxTestScenarioTest {
 
             expectState(countersLens) { assertEquals(mapOf("a" to CounterState(count = 1), "b" to CounterState()), it) }
             expectActions(keyedPrism) { assertEquals(2, it.size) }
+        }
+    }
+
+    @Test
+    fun `undoable store through the scenario DSL`() = runTest {
+        scenario(Undoable(CounterState()), counterReducer.undoable(), listOf(loadMiddleware.lifted(presentLens(), performPrism()))) {
+            whenDispatch(performPrism(), CounterAction.Increment, CounterAction.LoadRequested)
+            whenDispatch(UndoableAction.Undo)
+
+            expectState(presentLens()) { assertEquals(CounterState(count = 1, loading = true), it) }
+            expectState { assertTrue(it.canUndo && it.canRedo) }
+            expectActions(performPrism()) { assertEquals(3, it.size) }
         }
     }
 
