@@ -128,6 +128,22 @@ fun `increment twice`() = runTest {
 `TestStore` drives the real `Store` with your production reducer and middlewares and records
 every state and every action that reached the reducer, including those forwarded by middlewares.
 
+Scope a scenario to a feature slice with the `Lens`/`Prism` overloads, or run a middleware in
+isolation with `forwardedActions`:
+
+```kotlin
+scenario(AppState(), appReducer, listOf(searchMiddleware.lifted(counterLens, counterPrism))) {
+    whenDispatch(counterPrism, CounterAction.Increment)
+
+    expectState(counterLens) { assertEquals(1, it.count) }
+    expectStates(counterLens) { assertEquals(listOf(0, 1), it.map(CounterState::count)) }
+    expectActions(counterPrism) { assertEquals(listOf(CounterAction.Increment), it) }
+}
+
+val forwarded = loadMiddleware.forwardedActions(CounterState(), CounterAction.LoadRequested)
+assertEquals(listOf(CounterAction.LoadStarted, CounterAction.LoadSucceeded(42)), forwarded)
+```
+
 ## Development
 
 ```sh

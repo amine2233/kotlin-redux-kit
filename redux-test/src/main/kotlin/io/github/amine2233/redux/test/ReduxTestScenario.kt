@@ -1,7 +1,9 @@
 package io.github.amine2233.redux.test
 
 import io.github.amine2233.redux.Action
+import io.github.amine2233.redux.Lens
 import io.github.amine2233.redux.Middleware
+import io.github.amine2233.redux.Prism
 import io.github.amine2233.redux.Reducer
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -29,8 +31,18 @@ public class ReduxTestScenario<State, A : Action>(
         actions.forEach { store.dispatch(it) }
     }
 
+    /** Dispatches child actions embedded through [prism], e.g. `whenDispatch(counterPrism, Increment)`. */
+    public suspend fun <Child> whenDispatch(prism: Prism<A, Child>, vararg actions: Child) {
+        actions.forEach { store.dispatch(prism.embed(it)) }
+    }
+
     public fun expectState(assertion: (State) -> Unit) {
         assertion(store.getState())
+    }
+
+    /** Asserts on the slice of the state read through [lens]. */
+    public fun <Part> expectState(lens: Lens<State, Part>, assertion: (Part) -> Unit) {
+        assertion(lens.get(store.getState()))
     }
 
     /** Alias of [expectState] for scenarios describing a functional success. */
@@ -40,8 +52,18 @@ public class ReduxTestScenario<State, A : Action>(
         assertion(store.states())
     }
 
+    /** Asserts on the history of the slice read through [lens]. */
+    public fun <Part> expectStates(lens: Lens<State, Part>, assertion: (List<Part>) -> Unit) {
+        assertion(store.states().map(lens.get))
+    }
+
     public fun expectActions(assertion: (List<A>) -> Unit) {
         assertion(store.actions())
+    }
+
+    /** Asserts only on the child actions [prism] extracts, in dispatch order. */
+    public fun <Child> expectActions(prism: Prism<A, Child>, assertion: (List<Child>) -> Unit) {
+        assertion(store.actions().mapNotNull(prism.extract))
     }
 
     /** Polls the state until [assertion] holds; fails after [timeoutMillis]. Works with `runTest` virtual time. */
