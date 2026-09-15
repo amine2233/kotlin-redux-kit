@@ -1,0 +1,26 @@
+[tools]
+java = "temurin-21"
+gradle = "9.4.1"
+
+[env]
+_.file = ".env"
+GRADLE_OPTS = "-Dorg.gradle.jvmargs=-Xmx2g"
+
+[tasks.build]
+description = "Compile both libraries and run all checks"
+run = "./gradlew build"
+
+[tasks.test]
+description = "Run unit tests"
+run = "./gradlew test"
+
+[tasks.check]
+description = "Run tests and API checks"
+run = "./gradlew check"
+
+[tasks.clean]
+run = "./gradlew clean"
+
+[tasks.publish-local]
+description = "Publish redux and redux-test to ~/.m2"
+run = "./gradlew publishToMavenLocal"
