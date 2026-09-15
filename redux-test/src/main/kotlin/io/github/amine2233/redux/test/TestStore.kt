@@ -17,16 +17,17 @@ public class TestStore<State, A : Action>(
     initialState: State,
     reducer: Reducer<State, A>,
     middlewares: List<Middleware<State, A>> = emptyList(),
-    scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined)
+    scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
 ) {
     private val dispatchedActions = mutableListOf<A>()
     private val stateHistory = mutableListOf(initialState)
 
-    private val recorder = Middleware<State, A> { getState, action, next ->
-        dispatchedActions += action
-        next(action)
-        stateHistory += getState()
-    }
+    private val recorder =
+        Middleware<State, A> { getState, action, next ->
+            dispatchedActions += action
+            next(action)
+            stateHistory += getState()
+        }
 
     private val store = Store(initialState, reducer, middlewares + recorder, scope)
 

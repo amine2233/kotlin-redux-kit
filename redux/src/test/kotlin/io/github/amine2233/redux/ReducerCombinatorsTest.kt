@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class ReducerCombinatorsTest {
-
     @Test
     fun `identityReducer returns the state unchanged`() {
         val state = CounterState(count = 7)

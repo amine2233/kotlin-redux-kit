@@ -6,15 +6,19 @@ import kotlinx.coroutines.CoroutineScope
 public data class Undoable<State>(
     val present: State,
     val past: List<State> = emptyList(),
-    val future: List<State> = emptyList()
+    val future: List<State> = emptyList(),
 ) {
     val canUndo: Boolean get() = past.isNotEmpty()
     val canRedo: Boolean get() = future.isNotEmpty()
 }
 
 public sealed interface UndoableAction<out A : Action> : Action {
-    public data class Perform<A : Action>(val action: A) : UndoableAction<A>
+    public data class Perform<A : Action>(
+        val action: A,
+    ) : UndoableAction<A>
+
     public data object Undo : UndoableAction<Nothing>
+
     public data object Redo : UndoableAction<Nothing>
 }
 
@@ -28,15 +32,28 @@ public fun <State, A : Action> Reducer<State, A>.undoable(historyLimit: Int = In
         when (action) {
             is UndoableAction.Perform -> {
                 val next = reduce(state.present, action.action)
-                if (next == state.present) state
-                else Undoable(next, (state.past + state.present).takeLast(historyLimit), emptyList())
+                if (next == state.present) {
+                    state
+                } else {
+                    Undoable(next, (state.past + state.present).takeLast(historyLimit), emptyList())
+                }
             }
-            UndoableAction.Undo ->
-                if (!state.canUndo) state
-                else Undoable(state.past.last(), state.past.dropLast(1), listOf(state.present) + state.future)
-            UndoableAction.Redo ->
-                if (!state.canRedo) state
-                else Undoable(state.future.first(), state.past + state.present, state.future.drop(1))
+
+            UndoableAction.Undo -> {
+                if (!state.canUndo) {
+                    state
+                } else {
+                    Undoable(state.past.last(), state.past.dropLast(1), listOf(state.present) + state.future)
+                }
+            }
+
+            UndoableAction.Redo -> {
+                if (!state.canRedo) {
+                    state
+                } else {
+                    Undoable(state.future.first(), state.past + state.present, state.future.drop(1))
+                }
+            }
         }
     }
 
@@ -53,17 +70,19 @@ public fun <State, A : Action> UndoableStore(
     reducer: Reducer<State, A>,
     middlewares: List<Middleware<State, A>> = emptyList(),
     scope: CoroutineScope,
-    historyLimit: Int = Int.MAX_VALUE
-): UndoableStore<State, A> = Store(
-    initialState = Undoable(initialState),
-    reducer = reducer.undoable(historyLimit),
-    middlewares = middlewares.map { it.lifted(presentLens(), performPrism()) },
-    scope = scope
-)
+    historyLimit: Int = Int.MAX_VALUE,
+): UndoableStore<State, A> =
+    Store(
+        initialState = Undoable(initialState),
+        reducer = reducer.undoable(historyLimit),
+        middlewares = middlewares.map { it.lifted(presentLens(), performPrism()) },
+        scope = scope,
+    )
 
 public fun <State, A : Action> UndoableStore<State, A>.dispatch(action: A): Unit = dispatch(UndoableAction.Perform(action))
 
-public suspend fun <State, A : Action> UndoableStore<State, A>.dispatchSuspend(action: A): Unit = dispatchSuspend(UndoableAction.Perform(action))
+public suspend fun <State, A : Action> UndoableStore<State, A>.dispatchSuspend(action: A): Unit =
+    dispatchSuspend(UndoableAction.Perform(action))
 
 public fun <State, A : Action> UndoableStore<State, A>.undo(): Unit = dispatch(UndoableAction.Undo)
 

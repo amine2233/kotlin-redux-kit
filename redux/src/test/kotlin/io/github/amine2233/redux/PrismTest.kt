@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class PrismTest {
-
     @Test
     fun `extract returns the target when the source matches`() {
         assertEquals(CounterAction.Increment, counterPrism.extract(AppAction.Counter(CounterAction.Increment)))

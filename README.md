@@ -20,6 +20,20 @@ redux-test = { module = "io.github.amine2233:redux-test", version.ref = "redux-k
 ```
 
 ```kotlin
+// settings.gradle.kts — artifacts are published to GitHub Packages
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven("https://maven.pkg.github.com/amine2233/kotlin-redux-kit") {
+            credentials {
+                username = providers.gradleProperty("gpr.user").orElse(System.getenv("GITHUB_ACTOR") ?: "").get()
+                password = providers.gradleProperty("gpr.key").orElse(System.getenv("GITHUB_TOKEN") ?: "").get()
+            }
+        }
+    }
+}
+
+// build.gradle.kts
 dependencies {
     implementation(libs.redux)
     testImplementation(libs.redux.test)
@@ -167,13 +181,25 @@ assertEquals(listOf(CounterAction.LoadStarted, CounterAction.LoadSucceeded(42)),
 ## Development
 
 ```sh
-mise install          # temurin-21 + gradle
+mise trust && mise install        # JDK, node, ktlint
+cp .env.local.example .env.local  # GITHUB_ACTOR / GITHUB_TOKEN (write:packages), only for publish/release
+mise run lint
 mise run test
 mise run build
-mise run publish-local
 ```
 
-Local environment variables go in `.env` (git-ignored, loaded by mise).
+`mise run format` applies ktlint fixes.
+
+## CI/CD
+
+CI and releases come from [kotlin-ci-shared](https://github.com/amine2233/kotlin-ci-shared).
+All logic lives in `mise.toml`:
+
+- `mise run test` / `mise run lint` — what the `CI` workflow runs on pull requests.
+- Merging a `feat:` / `fix:` commit into `main` runs semantic-release: it tags
+  `vX.Y.Z`, updates `CHANGELOG.md`, publishes `io.github.amine2233:redux` and
+  `io.github.amine2233:redux-test` to GitHub Packages and creates the GitHub release with the jars attached.
+- `mise run release --dry-run` previews the next version locally.
 
 ## License
 

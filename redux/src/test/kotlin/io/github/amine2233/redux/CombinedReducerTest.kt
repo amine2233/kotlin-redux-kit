@@ -4,7 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CombinedReducerTest {
-
     private val doubling = Reducer<CounterState, CounterAction> { state, _ -> state.copy(count = state.count * 2) }
 
     @Test

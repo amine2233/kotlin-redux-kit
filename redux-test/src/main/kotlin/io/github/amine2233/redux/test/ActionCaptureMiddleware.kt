@@ -13,7 +13,11 @@ public class ActionCaptureMiddleware<State, A : Action> : Middleware<State, A> {
     public val actions: List<A>
         get() = captured.toList()
 
-    override suspend fun intercept(getState: () -> State, action: A, next: suspend (A) -> Unit) {
+    override suspend fun intercept(
+        getState: () -> State,
+        action: A,
+        next: suspend (A) -> Unit,
+    ) {
         captured += action
         next(action)
     }

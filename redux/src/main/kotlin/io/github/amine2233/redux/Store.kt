@@ -16,7 +16,7 @@ public class Store<State, A : Action>(
     initialState: State,
     private val reducer: Reducer<State, A>,
     private val middlewares: List<Middleware<State, A>> = emptyList(),
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(initialState)
     public val state: StateFlow<State> = _state
@@ -30,7 +30,10 @@ public class Store<State, A : Action>(
         invokeMiddleware(0, action)
     }
 
-    private suspend fun invokeMiddleware(index: Int, action: A) {
+    private suspend fun invokeMiddleware(
+        index: Int,
+        action: A,
+    ) {
         if (index >= middlewares.size) {
             _state.update { reducer.reduce(it, action) }
             return

@@ -3,6 +3,7 @@ build/
 .kotlin/
 .idea/
 *.iml
-.env
+.env.local
 local.properties
 .DS_Store
+node_modules/

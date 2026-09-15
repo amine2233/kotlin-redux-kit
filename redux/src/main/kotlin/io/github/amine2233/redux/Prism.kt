@@ -7,5 +7,5 @@ package io.github.amine2233.redux
  */
 public class Prism<Source, Target>(
     public val embed: (Target) -> Source,
-    public val extract: (Source) -> Target?
+    public val extract: (Source) -> Target?,
 )

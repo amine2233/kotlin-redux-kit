@@ -6,5 +6,5 @@ package io.github.amine2233.redux
  */
 public class Lens<Whole, Part>(
     public val get: (Whole) -> Part,
-    public val set: (Whole, Part) -> Whole
+    public val set: (Whole, Part) -> Whole,
 )

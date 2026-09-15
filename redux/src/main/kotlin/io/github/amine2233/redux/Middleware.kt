@@ -10,6 +10,6 @@ public fun interface Middleware<State, A : Action> {
     public suspend fun intercept(
         getState: () -> State,
         action: A,
-        next: suspend (A) -> Unit
+        next: suspend (A) -> Unit,
     )
 }

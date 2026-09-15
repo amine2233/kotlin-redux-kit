@@ -21,7 +21,7 @@ import kotlinx.coroutines.withTimeout
  * ```
  */
 public class ReduxTestScenario<State, A : Action>(
-    public val store: TestStore<State, A>
+    public val store: TestStore<State, A>,
 ) {
     public suspend fun whenDispatch(action: A) {
         store.dispatch(action)
@@ -32,7 +32,10 @@ public class ReduxTestScenario<State, A : Action>(
     }
 
     /** Dispatches child actions embedded through [prism], e.g. `whenDispatch(counterPrism, Increment)`. */
-    public suspend fun <Child> whenDispatch(prism: Prism<A, Child>, vararg actions: Child) {
+    public suspend fun <Child> whenDispatch(
+        prism: Prism<A, Child>,
+        vararg actions: Child,
+    ) {
         actions.forEach { store.dispatch(prism.embed(it)) }
     }
 
@@ -41,7 +44,10 @@ public class ReduxTestScenario<State, A : Action>(
     }
 
     /** Asserts on the slice of the state read through [lens]. */
-    public fun <Part> expectState(lens: Lens<State, Part>, assertion: (Part) -> Unit) {
+    public fun <Part> expectState(
+        lens: Lens<State, Part>,
+        assertion: (Part) -> Unit,
+    ) {
         assertion(lens.get(store.getState()))
     }
 
@@ -53,7 +59,10 @@ public class ReduxTestScenario<State, A : Action>(
     }
 
     /** Asserts on the history of the slice read through [lens]. */
-    public fun <Part> expectStates(lens: Lens<State, Part>, assertion: (List<Part>) -> Unit) {
+    public fun <Part> expectStates(
+        lens: Lens<State, Part>,
+        assertion: (List<Part>) -> Unit,
+    ) {
         assertion(store.states().map(lens.get))
     }
 
@@ -62,7 +71,10 @@ public class ReduxTestScenario<State, A : Action>(
     }
 
     /** Asserts only on the child actions [prism] extracts, in dispatch order. */
-    public fun <Child> expectActions(prism: Prism<A, Child>, assertion: (List<Child>) -> Unit) {
+    public fun <Child> expectActions(
+        prism: Prism<A, Child>,
+        assertion: (List<Child>) -> Unit,
+    ) {
         assertion(store.actions().mapNotNull(prism.extract))
     }
 
@@ -70,7 +82,7 @@ public class ReduxTestScenario<State, A : Action>(
     public suspend fun expectEventually(
         timeoutMillis: Long = 1_000,
         pollMillis: Long = 10,
-        assertion: (State) -> Boolean
+        assertion: (State) -> Boolean,
     ) {
         try {
             withTimeout(timeoutMillis) {
@@ -86,7 +98,7 @@ public suspend fun <State, A : Action> scenario(
     initialState: State,
     reducer: Reducer<State, A>,
     middlewares: List<Middleware<State, A>> = emptyList(),
-    block: suspend ReduxTestScenario<State, A>.() -> Unit
+    block: suspend ReduxTestScenario<State, A>.() -> Unit,
 ) {
     ReduxTestScenario(TestStore(initialState, reducer, middlewares)).block()
 }

@@ -8,8 +8,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class UndoableTest {
-
     private val reducer = counterReducer.undoable()
+
     private fun perform(action: CounterAction) = UndoableAction.Perform(action)
 
     @Test
@@ -30,7 +30,11 @@ class UndoableTest {
 
     @Test
     fun `undo then redo walk the history`() {
-        val two = reducer.reduce(reducer.reduce(Undoable(CounterState()), perform(CounterAction.Increment)), perform(CounterAction.Increment))
+        val two =
+            reducer.reduce(
+                reducer.reduce(Undoable(CounterState()), perform(CounterAction.Increment)),
+                perform(CounterAction.Increment),
+            )
 
         val undone = reducer.reduce(two, UndoableAction.Undo)
         assertEquals(1, undone.present.count)
@@ -60,30 +64,32 @@ class UndoableTest {
     }
 
     @Test
-    fun `UndoableStore lifts middlewares over the present state and exposes undo redo`() = runTest {
-        var observed = -1
-        val observer = Middleware<CounterState, CounterAction> { getState, action, next ->
-            next(action)
-            observed = getState().count
+    fun `UndoableStore lifts middlewares over the present state and exposes undo redo`() =
+        runTest {
+            var observed = -1
+            val observer =
+                Middleware<CounterState, CounterAction> { getState, action, next ->
+                    next(action)
+                    observed = getState().count
+                }
+            val store = UndoableStore(CounterState(), counterReducer, listOf(observer), scope = this)
+
+            store.dispatchSuspend(CounterAction.Add(3))
+            assertEquals(3, observed)
+            assertEquals(3, store.state.value.present.count)
+
+            store.undo()
+            yield()
+            assertEquals(0, store.state.value.present.count)
+            assertTrue(store.state.value.canRedo)
+
+            store.redo()
+            yield()
+            assertEquals(3, store.state.value.present.count)
+
+            store.dispatch(CounterAction.Increment)
+            yield()
+            assertEquals(4, store.state.value.present.count)
+            assertFalse(store.state.value.canRedo)
         }
-        val store = UndoableStore(CounterState(), counterReducer, listOf(observer), scope = this)
-
-        store.dispatchSuspend(CounterAction.Add(3))
-        assertEquals(3, observed)
-        assertEquals(3, store.state.value.present.count)
-
-        store.undo()
-        yield()
-        assertEquals(0, store.state.value.present.count)
-        assertTrue(store.state.value.canRedo)
-
-        store.redo()
-        yield()
-        assertEquals(3, store.state.value.present.count)
-
-        store.dispatch(CounterAction.Increment)
-        yield()
-        assertEquals(4, store.state.value.present.count)
-        assertFalse(store.state.value.canRedo)
-    }
 }
