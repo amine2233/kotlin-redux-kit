@@ -178,6 +178,24 @@ val forwarded = loadMiddleware.forwardedActions(CounterState(), CounterAction.Lo
 assertEquals(listOf(CounterAction.LoadStarted, CounterAction.LoadSucceeded(42)), forwarded)
 ```
 
+## Sample app
+
+`sample/` is an Android app (Compose, `minSdk 33` / Android 13 → `targetSdk 37` / Android 17) showing the library
+at three levels, each reusing the previous one:
+
+| Level | Screen | Shows |
+|---|---|---|
+| Simple | `sample/simple/` | `CounterState` + `CounterAction` + `counterReducer`, a `Store` owned by a `ViewModel`, Route/Screen split |
+| Medium | `sample/medium/` | `TodosMiddleware(repository)` turning `LoadRequested` into `LoadStarted → LoadSucceeded / LoadFailed`, swallowed actions, loading & error state |
+| Complex | `sample/complex/` | **one app store**: the simple and medium features lifted unchanged with `Lens` + `Prism`; `offset()` over `List<CounterState>`, `keyed()` over `Map<String, CounterState>`, `optional()` for `ProfileState?`, `undoable()` for the editor, a cross-cutting logging middleware, `ResetAll` |
+
+`sample/complex/AppStore.kt` is the reference for composition: every lens, prism and combinator of the library is
+declared there and unit-tested in `sample/src/test` through the `redux-test` DSL.
+
+```sh
+./gradlew :sample:installDebug      # needs local.properties with sdk.dir, or ANDROID_HOME
+```
+
 ## AI agent skill
 
 This repository ships a `kotlin-redux-kit` skill (`skills/kotlin-redux-kit/`) that teaches coding agents how to

@@ -39,6 +39,7 @@ Two artifacts, same version: `io.github.amine2233:redux` (runtime) and `io.githu
 | Test a flow | `scenario(initial, reducer, middlewares) { whenDispatch(...); expectState { } }` | [testing.md](references/testing.md) |
 | Test a middleware alone | `middleware.forwardedActions(state, action): List<A>` | [testing.md](references/testing.md) |
 | Test a slice | `whenDispatch(prism, child)`, `expectState(lens) { }`, `expectActions(prism) { }` | [testing.md](references/testing.md) |
+| Working example | `sample/` in the library repo — `simple/` (store), `medium/` (middleware), `complex/AppStore.kt` (every lens/prism/combinator, tested in `sample/src/test`) | [composition.md](references/composition.md) |
 | Architecture rules | one app store, feature reducers lifted, dependencies injected into middleware constructors | [best-practices.md](references/best-practices.md) |
 
 ## Rules that keep the library predictable

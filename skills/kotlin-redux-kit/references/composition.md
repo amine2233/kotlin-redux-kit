@@ -1,5 +1,8 @@
 # Composition: one app store, many features
 
+Runnable reference: `sample/src/main/kotlin/io/github/amine2233/redux/sample/complex/AppStore.kt` in the library repo
+(one `AppState` with lifted, offset, keyed, optional and undoable slices) and its tests in `sample/src/test`.
+
 Feature reducers and middlewares are written against their own `FeatureState` / `FeatureAction`, then *lifted* into
 the app store. Two small types bridge the gap:
 
