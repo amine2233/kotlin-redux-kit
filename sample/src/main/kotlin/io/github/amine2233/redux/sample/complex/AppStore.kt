@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.amine2233.redux.Action
 import io.github.amine2233.redux.CombinedReducer
+import io.github.amine2233.redux.DefaultStore
 import io.github.amine2233.redux.Lens
 import io.github.amine2233.redux.Middleware
+import io.github.amine2233.redux.NoEffect
 import io.github.amine2233.redux.Prism
 import io.github.amine2233.redux.Reducer
 import io.github.amine2233.redux.Store
@@ -147,12 +149,18 @@ val appReducer =
 
 /** Cross-cutting middleware written against the app types: sees every action, placed first. */
 val loggingMiddleware =
-    Middleware<AppState, AppAction> { _, action, next ->
-        Log.d("redux", action.toString())
-        next(action)
+    object : Middleware<AppState, AppAction, NoEffect> {
+        override suspend fun intercept(
+            store: Store<AppState, AppAction, NoEffect>,
+            action: AppAction,
+            next: suspend (AppAction) -> Unit,
+        ) {
+            android.util.Log.d("redux", action.toString())
+            next(action)
+        }
     }
 
-fun appMiddlewares(todoRepository: TodoRepository): List<Middleware<AppState, AppAction>> =
+fun appMiddlewares(todoRepository: TodoRepository): List<Middleware<AppState, AppAction, NoEffect>> =
     listOf(
         loggingMiddleware,
         TodosMiddleware(todoRepository).lifted(todosLens, todosPrism),
@@ -162,7 +170,8 @@ fun appMiddlewares(todoRepository: TodoRepository): List<Middleware<AppState, Ap
 class AppViewModel(
     todoRepository: TodoRepository = FakeTodoRepository(),
 ) : ViewModel() {
-    val store = Store(AppState(), appReducer, appMiddlewares(todoRepository), viewModelScope)
+    val store =
+        DefaultStore<AppState, AppAction, NoEffect>(AppState(), appReducer, appMiddlewares(todoRepository), emptyList(), viewModelScope)
 
     // Typed dispatch helpers so screens keep speaking their feature's language.
     fun counter(action: CounterAction) = store.dispatch(counterPrism.embed(action))

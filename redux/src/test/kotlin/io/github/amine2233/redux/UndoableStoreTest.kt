@@ -1,5 +1,8 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package io.github.amine2233.redux
 
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -7,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class UndoableTest {
+class UndoableStoreTest {
     private val reducer = counterReducer.undoable()
 
     private fun perform(action: CounterAction) = UndoableAction.Perform(action)
@@ -68,26 +71,37 @@ class UndoableTest {
         runTest {
             var observed = -1
             val observer =
-                Middleware<CounterState, CounterAction> { getState, action, next ->
+                Middleware<CounterState, CounterAction, DummyEffect> { innerStore, action, next ->
                     next(action)
-                    observed = getState().count
+                    observed = innerStore.state.value.count
                 }
-            val store = UndoableStore(CounterState(), counterReducer, listOf(observer), scope = this)
+            val store =
+                UndoableStore<CounterState, CounterAction, DummyEffect>(
+                    CounterState(),
+                    counterReducer,
+                    listOf(observer),
+                    emptyList(),
+                    scope = backgroundScope,
+                )
 
-            store.dispatchSuspend(CounterAction.Add(3))
+            store.dispatch(CounterAction.Add(3))
+            kotlinx.coroutines.yield()
             assertEquals(3, observed)
             assertEquals(3, store.state.value.present.count)
 
             store.undo()
+            kotlinx.coroutines.yield()
             yield()
             assertEquals(0, store.state.value.present.count)
             assertTrue(store.state.value.canRedo)
 
             store.redo()
+            kotlinx.coroutines.yield()
             yield()
             assertEquals(3, store.state.value.present.count)
 
             store.dispatch(CounterAction.Increment)
+            kotlinx.coroutines.yield()
             yield()
             assertEquals(4, store.state.value.present.count)
             assertFalse(store.state.value.canRedo)

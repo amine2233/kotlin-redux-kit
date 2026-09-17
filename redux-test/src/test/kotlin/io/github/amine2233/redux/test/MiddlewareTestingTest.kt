@@ -20,7 +20,7 @@ class MiddlewareTestingTest {
     @Test
     fun `forwardedActions is empty when the middleware swallows the action`() =
         runTest {
-            val swallowing = Middleware<CounterState, CounterAction> { _, _, _ -> }
+            val swallowing = Middleware<CounterState, CounterAction, DummyEffect> { _, _, _ -> }
 
             assertEquals(emptyList(), swallowing.forwardedActions(CounterState(), CounterAction.Increment))
         }
@@ -29,8 +29,8 @@ class MiddlewareTestingTest {
     fun `forwardedActions exposes the fixed state to the middleware`() =
         runTest {
             val echo =
-                Middleware<CounterState, CounterAction> { getState, _, next ->
-                    next(CounterAction.LoadSucceeded(getState().count))
+                Middleware<CounterState, CounterAction, DummyEffect> { store, _, next ->
+                    next(CounterAction.LoadSucceeded(store.state.value.count))
                 }
 
             assertEquals(listOf(CounterAction.LoadSucceeded(7)), echo.forwardedActions(CounterState(count = 7), CounterAction.Increment))

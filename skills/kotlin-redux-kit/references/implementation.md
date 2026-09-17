@@ -65,11 +65,11 @@ val searchReducer = Reducer<SearchState, SearchAction> { state, action ->
 
 ## Middleware
 
-Signature: `suspend fun intercept(getState: () -> State, action: A, next: suspend (A) -> Unit)`.
+Signature: `suspend fun intercept(store: Store<State, A, Effect>, action: A, next: suspend (A) -> Unit)`.
 
 - `next(action)` forwards to the next middleware, then the reducer. Not calling it swallows the action.
 - Calling `next` several times emits a sequence — the usual way to turn an intent into a lifecycle.
-- `getState()` is live. Read it *after* `next(...)` to see the reduced state (useful for persistence).
+- `store.state.value` is live. Read it *after* `next(...)` to see the reduced state (useful for persistence).
 - Dependencies come through the constructor so tests can stub them; a class is clearer than a lambda once it has any.
 
 ```kotlin
@@ -77,16 +77,12 @@ import io.github.amine2233.redux.Middleware
 
 class SearchMiddleware(
     private val api: GithubApi,
-) : Middleware<SearchState, SearchAction> {
-    override suspend fun intercept(
-        getState: () -> SearchState,
-        action: SearchAction,
-        next: suspend (SearchAction) -> Unit,
-    ) {
+) : Middleware<SearchState, SearchAction, Effect> {
+    override suspend fun intercept(store: Store<SearchState, SearchAction, Effect>, action: SearchAction, next: suspend (SearchAction) -> Unit) {
         if (action != SearchAction.SearchRequested) return next(action)
 
         next(SearchAction.SearchStarted)
-        runCatching { api.search(getState().query) }
+        runCatching { api.search(store.state.value.query) }
             .onSuccess { next(SearchAction.SearchSucceeded(it.items)) }
             .onFailure { next(SearchAction.SearchFailed(it.message ?: "Unknown error")) }
     }
@@ -99,9 +95,9 @@ keeps the recorded action history in tests meaningful (`SearchStarted -> SearchS
 A stateless middleware can stay a lambda:
 
 ```kotlin
-val analytics = Middleware<SearchState, SearchAction> { getState, action, next ->
+val analytics = Middleware<SearchState, SearchAction, Effect> { store, action, next ->
     next(action)
-    tracker.track(action::class.simpleName.orEmpty(), getState().query)
+    tracker.track(action::class.simpleName.orEmpty(), store.state.value.query)
 }
 ```
 
@@ -111,7 +107,7 @@ val analytics = Middleware<SearchState, SearchAction> { getState, action, next -
 import io.github.amine2233.redux.Store
 
 class SearchViewModel(api: GithubApi) : ViewModel() {
-    val store = Store(
+    val store = DefaultStore(
         initialState = SearchState(),
         reducer = searchReducer,
         middlewares = listOf(SearchMiddleware(api), analytics),
@@ -122,8 +118,6 @@ class SearchViewModel(api: GithubApi) : ViewModel() {
 
 - `store.state: StateFlow<SearchState>` — the single source of truth.
 - `store.dispatch(action)` — fire and forget, launched on `scope`. Use from UI callbacks.
-- `store.dispatchSuspend(action)` — runs the whole chain before returning. Use in tests or when the caller must
-  await the result (e.g. a `LaunchedEffect` that dispatches then navigates).
 
 Middleware order is the list order; the reducer runs after the last one. Concurrent dispatches are safe: the reducer
 is applied with an atomic `update`, so no state change is lost.
@@ -134,7 +128,7 @@ See [compose.md](compose.md) for the full Compose wiring. Minimal shape:
 
 ```kotlin
 @Composable
-fun SearchScreen(store: Store<SearchState, SearchAction>) {
+fun SearchScreen(store: Store<SearchState, SearchAction, Effect>) {
     val state by store.state.collectAsStateWithLifecycle()
 
     Column {

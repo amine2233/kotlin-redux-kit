@@ -1,6 +1,6 @@
 # Undo / redo with `UndoableStore`
 
-`UndoableStore<State, A>` is a type alias for `Store<Undoable<State>, UndoableAction<A>>`. Your reducer and
+`UndoableStore<State, A, Effect>` is a type alias for `Store<Undoable<State>, UndoableAction<A>, Effect>`. Your reducer and
 middlewares are unchanged; the history lives in the state.
 
 ```kotlin
@@ -41,7 +41,6 @@ and `EditorAction`; `Undo` / `Redo` pass through them untouched.
 store.dispatch(EditorAction.TextChanged("hello"))   // extension: wraps in Perform
 store.undo()                                         // extension: dispatch(UndoableAction.Undo)
 store.redo()
-store.dispatchSuspend(EditorAction.Save)             // suspend variant, also wraps
 
 val state by store.state.collectAsStateWithLifecycle()
 Row {

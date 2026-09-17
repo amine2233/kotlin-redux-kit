@@ -28,12 +28,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.amine2233.redux.Store
+import io.github.amine2233.redux.DefaultStore
+import io.github.amine2233.redux.NoEffect
 
 class TodosViewModel(
     repository: TodoRepository,
 ) : ViewModel() {
-    val store = Store(TodosState(), todosReducer, listOf(TodosMiddleware(repository)), viewModelScope)
+    val store =
+        DefaultStore<TodosState, TodosAction, NoEffect>(
+            TodosState(),
+            todosReducer,
+            listOf(TodosMiddleware(repository)),
+            emptyList(),
+            viewModelScope,
+        )
 }
 
 @Composable

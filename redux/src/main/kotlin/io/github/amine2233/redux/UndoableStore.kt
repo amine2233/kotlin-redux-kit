@@ -62,28 +62,27 @@ public fun <State> presentLens(): Lens<Undoable<State>, State> = Lens({ it.prese
 public fun <A : Action> performPrism(): Prism<UndoableAction<A>, A> =
     Prism({ UndoableAction.Perform(it) }) { (it as? UndoableAction.Perform)?.action }
 
-public typealias UndoableStore<State, A> = Store<Undoable<State>, UndoableAction<A>>
+public typealias UndoableStore<State, A, E> = Store<Undoable<State>, UndoableAction<A>, E>
 
 /** A [Store] whose state carries undo/redo history. Middlewares see the present state and plain actions. */
-public fun <State, A : Action> UndoableStore(
+public fun <State, A : Action, E : Effect> UndoableStore(
     initialState: State,
     reducer: Reducer<State, A>,
-    middlewares: List<Middleware<State, A>> = emptyList(),
+    middlewares: List<Middleware<State, A, E>> = emptyList(),
+    services: List<StoreService<Undoable<State>, UndoableAction<A>, E>> = emptyList(),
     scope: CoroutineScope,
     historyLimit: Int = Int.MAX_VALUE,
-): UndoableStore<State, A> =
-    Store(
+): UndoableStore<State, A, E> =
+    DefaultStore(
         initialState = Undoable(initialState),
         reducer = reducer.undoable(historyLimit),
         middlewares = middlewares.map { it.lifted(presentLens(), performPrism()) },
+        services = services,
         scope = scope,
     )
 
-public fun <State, A : Action> UndoableStore<State, A>.dispatch(action: A): Unit = dispatch(UndoableAction.Perform(action))
+public fun <State, A : Action, E : Effect> UndoableStore<State, A, E>.dispatch(action: A): Unit = dispatch(UndoableAction.Perform(action))
 
-public suspend fun <State, A : Action> UndoableStore<State, A>.dispatchSuspend(action: A): Unit =
-    dispatchSuspend(UndoableAction.Perform(action))
+public fun <State, A : Action, E : Effect> UndoableStore<State, A, E>.undo(): Unit = dispatch(UndoableAction.Undo)
 
-public fun <State, A : Action> UndoableStore<State, A>.undo(): Unit = dispatch(UndoableAction.Undo)
-
-public fun <State, A : Action> UndoableStore<State, A>.redo(): Unit = dispatch(UndoableAction.Redo)
+public fun <State, A : Action, E : Effect> UndoableStore<State, A, E>.redo(): Unit = dispatch(UndoableAction.Redo)

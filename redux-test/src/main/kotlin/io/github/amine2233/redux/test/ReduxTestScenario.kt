@@ -1,49 +1,51 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package io.github.amine2233.redux.test
 
 import io.github.amine2233.redux.Action
+import io.github.amine2233.redux.Effect
 import io.github.amine2233.redux.Lens
 import io.github.amine2233.redux.Middleware
 import io.github.amine2233.redux.Prism
 import io.github.amine2233.redux.Reducer
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.withTimeout
 
-/**
- * Given/when/then DSL: build a [TestStore] from a precise initial state, dispatch actions,
- * then assert on the final state, the state history or the emitted actions.
- *
- * ```
- * scenario(initialState = CounterState(0), reducer = counterReducer) {
- *     whenDispatch(CounterAction.Increment)
- *     expectState { state -> assertEquals(1, state.count) }
- * }
- * ```
- */
-public class ReduxTestScenario<State, A : Action>(
-    public val store: TestStore<State, A>,
+public class ReduxTestScenario<State, A : Action, E : Effect>(
+    public val store: TestStore<State, A, E>,
 ) {
     public suspend fun whenDispatch(action: A) {
         store.dispatch(action)
+        kotlinx.coroutines.yield()
+        kotlin.coroutines.coroutineContext[TestCoroutineScheduler]?.advanceUntilIdle()
     }
 
     public suspend fun whenDispatch(vararg actions: A) {
-        actions.forEach { store.dispatch(it) }
+        actions.forEach {
+            store.dispatch(it)
+            kotlinx.coroutines.yield()
+            kotlin.coroutines.coroutineContext[TestCoroutineScheduler]?.advanceUntilIdle()
+        }
     }
 
-    /** Dispatches child actions embedded through [prism], e.g. `whenDispatch(counterPrism, Increment)`. */
     public suspend fun <Child> whenDispatch(
         prism: Prism<A, Child>,
         vararg actions: Child,
     ) {
-        actions.forEach { store.dispatch(prism.embed(it)) }
+        actions.forEach {
+            store.dispatch(prism.embed(it))
+            kotlinx.coroutines.yield()
+            kotlin.coroutines.coroutineContext[TestCoroutineScheduler]?.advanceUntilIdle()
+        }
     }
 
     public fun expectState(assertion: (State) -> Unit) {
         assertion(store.getState())
     }
 
-    /** Asserts on the slice of the state read through [lens]. */
     public fun <Part> expectState(
         lens: Lens<State, Part>,
         assertion: (Part) -> Unit,
@@ -51,14 +53,12 @@ public class ReduxTestScenario<State, A : Action>(
         assertion(lens.get(store.getState()))
     }
 
-    /** Alias of [expectState] for scenarios describing a functional success. */
     public fun expectSuccess(assertion: (State) -> Unit): Unit = expectState(assertion)
 
     public fun expectStates(assertion: (List<State>) -> Unit) {
         assertion(store.states())
     }
 
-    /** Asserts on the history of the slice read through [lens]. */
     public fun <Part> expectStates(
         lens: Lens<State, Part>,
         assertion: (List<Part>) -> Unit,
@@ -70,7 +70,6 @@ public class ReduxTestScenario<State, A : Action>(
         assertion(store.actions())
     }
 
-    /** Asserts only on the child actions [prism] extracts, in dispatch order. */
     public fun <Child> expectActions(
         prism: Prism<A, Child>,
         assertion: (List<Child>) -> Unit,
@@ -78,7 +77,6 @@ public class ReduxTestScenario<State, A : Action>(
         assertion(store.actions().mapNotNull(prism.extract))
     }
 
-    /** Polls the state until [assertion] holds; fails after [timeoutMillis]. Works with `runTest` virtual time. */
     public suspend fun expectEventually(
         timeoutMillis: Long = 1_000,
         pollMillis: Long = 10,
@@ -94,11 +92,31 @@ public class ReduxTestScenario<State, A : Action>(
     }
 }
 
+public suspend fun <State, A : Action, E : Effect> scenario(
+    initialState: State,
+    reducer: Reducer<State, A>,
+    middlewares: List<Middleware<State, A, E>> = emptyList(),
+    block: suspend ReduxTestScenario<State, A, E>.() -> Unit,
+) {
+    val store = TestStore(initialState, reducer, middlewares, kotlinx.coroutines.CoroutineScope(kotlin.coroutines.coroutineContext))
+    try {
+        ReduxTestScenario(store).block()
+    } finally {
+        store.close()
+    }
+}
+
+@JvmName("scenarioDummy")
 public suspend fun <State, A : Action> scenario(
     initialState: State,
     reducer: Reducer<State, A>,
-    middlewares: List<Middleware<State, A>> = emptyList(),
-    block: suspend ReduxTestScenario<State, A>.() -> Unit,
+    middlewares: List<Middleware<State, A, DummyEffect>> = emptyList(),
+    block: suspend ReduxTestScenario<State, A, DummyEffect>.() -> Unit,
 ) {
-    ReduxTestScenario(TestStore(initialState, reducer, middlewares)).block()
+    val store = TestStore(initialState, reducer, middlewares, kotlinx.coroutines.CoroutineScope(kotlin.coroutines.coroutineContext))
+    try {
+        ReduxTestScenario(store).block()
+    } finally {
+        store.close()
+    }
 }

@@ -29,8 +29,8 @@ Two artifacts, same version: `io.github.amine2233:redux` (runtime) and `io.githu
 | Need | API | Reference |
 |---|---|---|
 | Add the dependency | GitHub Packages repo + catalog aliases `redux`, `redux-test` | [installation.md](references/installation.md) |
-| Core types | `Action`, `Reducer<State, A>`, `Middleware<State, A>`, `Store(initialState, reducer, middlewares, scope)` | [implementation.md](references/implementation.md) |
-| Dispatch | `store.dispatch(a)` (launches on the store scope) / `store.dispatchSuspend(a)` (awaits the chain) | [implementation.md](references/implementation.md) |
+| Core types | `Action`, `Effect`, `Reducer<State, A>`, `Middleware<State, A, E>`, `DefaultStore(initialState, reducer, middlewares, services, scope)` | [implementation.md](references/implementation.md) |
+| Dispatch | `store.dispatch(a)` (launches on the store scope), `store.emitEffect(e)` | [implementation.md](references/implementation.md) |
 | Combine reducers | `CombinedReducer(r1, r2, …)` — sequential fold | [composition.md](references/composition.md) |
 | Scope to a state slice | `Lens<Whole, Part>(get, set)` + `Prism<Parent, Child>(embed, extract)` + `reducer.lifted(lens, prism)` / `middleware.lifted(lens, prism)` | [composition.md](references/composition.md) |
 | Map / List / nullable slices | `keyed(lens, prism)`, `offset(lens, prism)`, `optional()` on reducers and middlewares | [composition.md](references/composition.md) |
@@ -46,7 +46,7 @@ Two artifacts, same version: `io.github.amine2233:redux` (runtime) and `io.githu
 
 - A reducer never suspends, never touches a repository, never logs. If it needs a side effect, that is a middleware.
 - A middleware decides what reaches the reducer: call `next(action)` to let it through, skip it to swallow, call it
-  several times to emit a sequence (`LoadRequested -> LoadStarted -> LoadSucceeded`). `getState()` is live: after
+  several times to emit a sequence (`LoadRequested -> LoadStarted -> LoadSucceeded`). `store.state.value` is live: after
   `next(action)` it returns the already reduced state.
 - Actions are a sealed hierarchy per feature; parent actions wrap child actions (`AppAction.Counter(CounterAction)`)
   and a `Prism` bridges the two. Never leak a child action type outside its feature except through the prism.
@@ -58,8 +58,8 @@ Two artifacts, same version: `io.github.amine2233:redux` (runtime) and `io.githu
 
 ## Deciding between patterns
 
-- One screen, one feature, no sharing → a `Store<FeatureState, FeatureAction>` owned by the ViewModel.
-- Several features share state or navigation → one `Store<AppState, AppAction>` and features lifted into it.
+- One screen, one feature, no sharing → a `Store<FeatureState, FeatureAction, Effect>` owned by the ViewModel.
+- Several features share state or navigation → one `Store<AppState, AppAction, Effect>` and features lifted into it.
 - A list of identical rows → `offset()` (index) or `keyed()` (stable id, preferred when rows can move).
 - The slice may not exist yet (detail screen before load) → `optional()`, often combined with `lifted()`.
 - The user must be able to revert edits → `UndoableStore` around the feature reducer; UI reads `present`.
