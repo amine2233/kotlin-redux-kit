@@ -17,7 +17,7 @@ Never build a `Store` inside a composable body without `remember`; it would be r
 
 ```kotlin
 class SearchViewModel(api: GithubApi) : ViewModel() {
-    val store = Store(SearchState(), searchReducer, listOf(SearchMiddleware(api)), viewModelScope)
+    val store = DefaultStore(SearchState(), searchReducer, listOf(SearchMiddleware(api)), viewModelScope)
 }
 ```
 
@@ -109,7 +109,7 @@ private fun SearchScreenPreview() {
 ```
 
 Because `Screen` takes plain state and a lambda, previews need no store. If a preview must exercise middlewares,
-build `Store(..., scope = rememberCoroutineScope())` inside `remember { }`.
+build `DefaultStore(..., scope = rememberCoroutineScope())` inside `remember { }`.
 
 ## Undo / redo in the UI
 

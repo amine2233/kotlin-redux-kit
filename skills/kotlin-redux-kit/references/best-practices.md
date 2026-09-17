@@ -57,20 +57,20 @@ runCatching { repo.load() }
 
 ```kotlin
 next(action)
-if (action is SettingsAction) settingsStore.save(getState().settings)
+if (action is SettingsAction) settingsStore.save(store.state.value.settings)
 ```
 
 **Guard / filter** — swallow when preconditions fail:
 
 ```kotlin
-if (action is CartAction.Checkout && getState().items.isEmpty()) return   // swallowed
+if (action is CartAction.Checkout && store.state.value.items.isEmpty()) return   // swallowed
 next(action)
 ```
 
 **Cross-cutting** (logging, analytics, crash breadcrumbs) — written against the app types and placed first:
 
 ```kotlin
-val logging = Middleware<AppState, AppAction> { _, action, next -> Log.d("redux", action.toString()); next(action) }
+val logging = Middleware<AppState, AppAction, Effect> { _, action, next -> Log.d("redux", action.toString()); next(action) }
 val appMiddlewares = listOf(logging) + featureMiddlewares
 ```
 

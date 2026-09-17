@@ -91,7 +91,7 @@ fun appMiddlewares(deps: Dependencies) = listOf(
     CartMiddleware(deps.cartRepository).keyed(cartsLens, cartPrism),
 )
 
-val appStore = Store(AppState(), appReducer, appMiddlewares(deps), scope)
+val appStore = DefaultStore(AppState(), appReducer, appMiddlewares(deps), scope)
 ```
 
 Order inside `CombinedReducer` matters only when two reducers touch the same field — keep each feature on its own
@@ -103,7 +103,7 @@ The screen keeps working against `SearchAction`; wrap at the boundary:
 
 ```kotlin
 @Composable
-fun SearchScreen(store: Store<AppState, AppAction>) {
+fun SearchScreen(store: Store<AppState, AppAction, Effect>) {
     val state by store.state.collectAsStateWithLifecycle()
     val search = state.search
     val dispatch: (SearchAction) -> Unit = { store.dispatch(searchPrism.embed(it)) }
@@ -121,7 +121,7 @@ actions for a missing entry are silently no-ops, which is the safe behaviour for
 
 ## Reaching across features
 
-A middleware sees only its slice through `getState()`. When a feature needs another feature's data:
+A middleware sees only its slice through `store.state.value`. When a feature needs another feature's data:
 
 - prefer passing it in the action from the parent (`AppAction.Search(SearchAction.QueryChanged(query))` built by the
   screen that knows both), or

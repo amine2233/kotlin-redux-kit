@@ -128,7 +128,7 @@ A pass-through recorder to place at a specific position in the chain — e.g. to
 transformed an action into:
 
 ```kotlin
-val capture = ActionCaptureMiddleware<SearchState, SearchAction>()
+val capture = ActionCaptureMiddleware<SearchState, SearchAction, Effect>()
 scenario(SearchState(), searchReducer, listOf(SearchMiddleware(fakeApi), capture)) {
     whenDispatch(SearchAction.SearchRequested)
     assertEquals(listOf(SearchAction.SearchStarted, SearchAction.SearchSucceeded(emptyList())), capture.actions)
@@ -140,7 +140,7 @@ scenario(SearchState(), searchReducer, listOf(SearchMiddleware(fakeApi), capture
 ```kotlin
 val store = TestStore(SearchState(), searchReducer, middlewares)   // scope defaults to Dispatchers.Unconfined
 store.dispatch(action)          // suspend, awaits the chain
-store.getState(); store.state   // StateFlow
+store.store.state.value; store.state   // StateFlow
 store.states(); store.actions()
 ```
 
@@ -158,3 +158,24 @@ reducer, middleware and flow tests.
 - [ ] every middleware: success path, failure path, pass-through of unrelated actions (`forwardedActions`)
 - [ ] one `scenario` for the happy end-to-end flow with `expectActions` (the sequence is the contract)
 - [ ] lifted features: one test through the app store with the lens/prism overloads
+
+## `StoreTestRig` (New in v2)
+
+For deterministic tracking of States and Effects in virtual time using Coroutines `TestScope`, `StoreTestRig` allows asserting the exact sequence:
+
+```kotlin
+import io.github.amine2233.redux.test.StoreTestRig
+
+@Test
+fun `rig tests actions and effects`() = runTest {
+    val store = DefaultStore<SearchState, SearchAction, SearchEffect>(SearchState(), searchReducer, listOf(middleware), emptyList(), this)
+    val rig = StoreTestRig(store, this)
+
+    rig.dispatch(SearchAction.SearchRequested)
+
+    rig.assertLastState { state ->
+        assertEquals(true, state.isLoading)
+    }
+    rig.assertEffectEmitted(SearchEffect.ShowToast("Searching..."))
+}
+```
