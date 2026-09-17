@@ -27,7 +27,9 @@ public class TestStore<State, A : Action, E : Effect>(
             stateHistory += store.state.value
         }
 
-    private val store = DefaultStore<State, A, E>(initialState, reducer, middlewares + recorder, emptyList(), scope)
+    private val storeScope =
+        kotlinx.coroutines.CoroutineScope(scope.coroutineContext + kotlinx.coroutines.Job(scope.coroutineContext[kotlinx.coroutines.Job]))
+    private val store = DefaultStore<State, A, E>(initialState, reducer, middlewares + recorder, emptyList(), storeScope)
 
     public val state: StateFlow<State>
         get() = store.state
@@ -36,6 +38,10 @@ public class TestStore<State, A : Action, E : Effect>(
 
     public suspend fun dispatch(action: A) {
         store.dispatch(action)
+    }
+
+    public fun close() {
+        store.close()
     }
 
     public fun actions(): List<A> = dispatchedActions.toList()

@@ -1,5 +1,8 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package io.github.amine2233.redux
 
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -78,23 +81,27 @@ class UndoableStoreTest {
                     counterReducer,
                     listOf(observer),
                     emptyList(),
-                    scope = this,
+                    scope = backgroundScope,
                 )
 
             store.dispatch(CounterAction.Add(3))
+            kotlinx.coroutines.yield()
             assertEquals(3, observed)
             assertEquals(3, store.state.value.present.count)
 
             store.undo()
+            kotlinx.coroutines.yield()
             yield()
             assertEquals(0, store.state.value.present.count)
             assertTrue(store.state.value.canRedo)
 
             store.redo()
+            kotlinx.coroutines.yield()
             yield()
             assertEquals(3, store.state.value.present.count)
 
             store.dispatch(CounterAction.Increment)
+            kotlinx.coroutines.yield()
             yield()
             assertEquals(4, store.state.value.present.count)
             assertFalse(store.state.value.canRedo)

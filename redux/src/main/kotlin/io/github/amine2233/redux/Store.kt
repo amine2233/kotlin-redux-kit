@@ -10,6 +10,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -102,15 +103,20 @@ public class DefaultStore<S, A : Action, E : Effect>(
             }
         }
 
-    override fun <SubState> select(lens: Lens<S, SubState>): StateFlow<SubState> =
-        state
-            .map { lens.get(it) }
-            .distinctUntilChanged()
-            .stateIn(
-                scope = scope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = lens.get(state.value),
-            )
+    override fun <SubState> select(lens: Lens<S, SubState>): StateFlow<SubState> {
+        val upstream = this.state
+        return object : StateFlow<SubState> {
+            override val value: SubState
+                get() = lens.get(upstream.value)
+            override val replayCache: List<SubState>
+                get() = listOf(value)
+
+            override suspend fun collect(collector: FlowCollector<SubState>): Nothing {
+                upstream.map { lens.get(it) }.distinctUntilChanged().collect(collector)
+                error("collect should never terminate normally")
+            }
+        }
+    }
 
     override fun close() {
         services.forEach { it.stop() }

@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package io.github.amine2233.redux.test
 
 import io.github.amine2233.redux.Action
@@ -8,6 +10,8 @@ import io.github.amine2233.redux.Prism
 import io.github.amine2233.redux.Reducer
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.withTimeout
 
 public class ReduxTestScenario<State, A : Action, E : Effect>(
@@ -15,17 +19,27 @@ public class ReduxTestScenario<State, A : Action, E : Effect>(
 ) {
     public suspend fun whenDispatch(action: A) {
         store.dispatch(action)
+        kotlinx.coroutines.yield()
+        kotlin.coroutines.coroutineContext[TestCoroutineScheduler]?.advanceUntilIdle()
     }
 
     public suspend fun whenDispatch(vararg actions: A) {
-        actions.forEach { store.dispatch(it) }
+        actions.forEach {
+            store.dispatch(it)
+            kotlinx.coroutines.yield()
+            kotlin.coroutines.coroutineContext[TestCoroutineScheduler]?.advanceUntilIdle()
+        }
     }
 
     public suspend fun <Child> whenDispatch(
         prism: Prism<A, Child>,
         vararg actions: Child,
     ) {
-        actions.forEach { store.dispatch(prism.embed(it)) }
+        actions.forEach {
+            store.dispatch(prism.embed(it))
+            kotlinx.coroutines.yield()
+            kotlin.coroutines.coroutineContext[TestCoroutineScheduler]?.advanceUntilIdle()
+        }
     }
 
     public fun expectState(assertion: (State) -> Unit) {
@@ -84,7 +98,12 @@ public suspend fun <State, A : Action, E : Effect> scenario(
     middlewares: List<Middleware<State, A, E>> = emptyList(),
     block: suspend ReduxTestScenario<State, A, E>.() -> Unit,
 ) {
-    ReduxTestScenario(TestStore(initialState, reducer, middlewares)).block()
+    val store = TestStore(initialState, reducer, middlewares, kotlinx.coroutines.CoroutineScope(kotlin.coroutines.coroutineContext))
+    try {
+        ReduxTestScenario(store).block()
+    } finally {
+        store.close()
+    }
 }
 
 @JvmName("scenarioDummy")
@@ -94,5 +113,10 @@ public suspend fun <State, A : Action> scenario(
     middlewares: List<Middleware<State, A, DummyEffect>> = emptyList(),
     block: suspend ReduxTestScenario<State, A, DummyEffect>.() -> Unit,
 ) {
-    ReduxTestScenario(TestStore(initialState, reducer, middlewares)).block()
+    val store = TestStore(initialState, reducer, middlewares, kotlinx.coroutines.CoroutineScope(kotlin.coroutines.coroutineContext))
+    try {
+        ReduxTestScenario(store).block()
+    } finally {
+        store.close()
+    }
 }

@@ -1,6 +1,9 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package io.github.amine2233.redux
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,16 +34,22 @@ class MiddlewareCombinatorsTest {
     @Test
     fun `lifted runs the child middleware with the lowered state and re-embeds forwarded actions`() =
         runTest {
-            val store = makeStore(logging.lifted(counterLens, counterPrism), initial = AppState(counter = CounterState(count = 4)))
+            val store =
+                backgroundScope.makeStore(
+                    logging.lifted(counterLens, counterPrism),
+                    initial = AppState(counter = CounterState(count = 4)),
+                )
             store.dispatch(AppAction.Counter(CounterAction.Increment))
+            kotlinx.coroutines.yield()
             assertEquals(CounterState(count = 5, log = listOf("count=4")), store.state.value.counter)
         }
 
     @Test
     fun `lifted passes non-matching actions through`() =
         runTest {
-            val store = makeStore(logging.lifted(counterLens, counterPrism))
+            val store = backgroundScope.makeStore(logging.lifted(counterLens, counterPrism))
             store.dispatch(AppAction.SetTitle("hello"))
+            kotlinx.coroutines.yield()
             assertEquals(AppState(title = "hello"), store.state.value)
         }
 
@@ -68,7 +77,7 @@ class MiddlewareCombinatorsTest {
     fun `keyed addresses the entry carried by the action and passes unknown keys through`() =
         runTest {
             val store =
-                makeStore(
+                backgroundScope.makeStore(
                     logging.keyed(countersLens, keyedPrism),
                     initial =
                         AppState(
@@ -77,7 +86,9 @@ class MiddlewareCombinatorsTest {
                         ),
                 )
             store.dispatch(AppAction.Keyed("a", CounterAction.Increment))
+            kotlinx.coroutines.yield()
             store.dispatch(AppAction.Keyed("missing", CounterAction.Increment))
+            kotlinx.coroutines.yield()
             assertEquals(mapOf("a" to CounterState(count = 3, log = listOf("count=2"))), store.state.value.counters)
         }
 
@@ -85,12 +96,14 @@ class MiddlewareCombinatorsTest {
     fun `offset addresses the element carried by the action and passes out-of-range indices through`() =
         runTest {
             val store =
-                makeStore(
+                backgroundScope.makeStore(
                     logging.offset(listLens, indexedPrism),
                     initial = AppState(list = listOf(CounterState(), CounterState(count = 8))),
                 )
             store.dispatch(AppAction.Indexed(1, CounterAction.Increment))
+            kotlinx.coroutines.yield()
             store.dispatch(AppAction.Indexed(5, CounterAction.Increment))
+            kotlinx.coroutines.yield()
             assertEquals(listOf(CounterState(), CounterState(count = 9, log = listOf("count=8"))), store.state.value.list)
         }
 }
