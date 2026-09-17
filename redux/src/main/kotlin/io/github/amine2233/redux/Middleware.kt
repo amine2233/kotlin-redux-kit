@@ -1,15 +1,16 @@
 package io.github.amine2233.redux
 
-/**
- * Intercepts an action before it reaches the [Reducer] to run side effects
- * (navigation, analytics, repository calls) and forward zero or more actions via [next].
- *
- * `getState` is a live accessor: called after `next(action)` it returns the already reduced state.
- */
-public fun interface Middleware<State, A : Action> {
+import kotlinx.coroutines.CoroutineScope
+
+public fun interface Middleware<S, A : Action, E : Effect> {
     public suspend fun intercept(
-        getState: () -> State,
+        store: Store<S, A, E>,
         action: A,
-        next: suspend (A) -> Unit,
+        next: suspend (A) -> Unit
     )
+}
+
+public interface StoreService<S, A : Action, E : Effect> {
+    public suspend fun start(store: Store<S, A, E>, scope: CoroutineScope)
+    public fun stop() {}
 }

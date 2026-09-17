@@ -95,7 +95,7 @@ class ReduxTestScenarioTest {
     @Test
     fun `ActionCaptureMiddleware records actions at its position in the chain`() =
         runTest {
-            val capture = ActionCaptureMiddleware<CounterState, CounterAction>()
+            val capture = ActionCaptureMiddleware<CounterState, CounterAction, DummyEffect>()
 
             scenario(CounterState(), counterReducer, listOf(capture, loadMiddleware)) {
                 whenDispatch(CounterAction.LoadRequested)

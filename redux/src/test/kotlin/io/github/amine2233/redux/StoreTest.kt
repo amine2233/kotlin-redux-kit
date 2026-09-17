@@ -9,11 +9,11 @@ import kotlin.test.assertEquals
 
 class StoreTest {
     @Test
-    fun `dispatchSuspend applies the reducer`() =
+    fun `dispatch applies the reducer`() =
         runTest {
-            val store = Store(CounterState(), counterReducer, scope = this)
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, scope = this)
 
-            store.dispatchSuspend(CounterAction.Add(5))
+            store.dispatch(CounterAction.Add(5))
 
             assertEquals(5, store.state.value.count)
         }
@@ -21,7 +21,7 @@ class StoreTest {
     @Test
     fun `dispatch runs on the store scope and updates state`() =
         runTest {
-            val store = Store(CounterState(), counterReducer, scope = this)
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, scope = this)
 
             store.dispatch(CounterAction.Increment)
             yield()
@@ -34,18 +34,18 @@ class StoreTest {
         runTest {
             val order = mutableListOf<String>()
             val first =
-                Middleware<CounterState, CounterAction> { _, action, next ->
+                Middleware<CounterState, CounterAction, DummyEffect> { _, action, next ->
                     order += "first"
                     next(action)
                 }
             val second =
-                Middleware<CounterState, CounterAction> { _, action, next ->
+                Middleware<CounterState, CounterAction, DummyEffect> { _, action, next ->
                     order += "second"
                     next(action)
                 }
-            val store = Store(CounterState(), counterReducer, listOf(first, second), this)
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(first, second), scope = this)
 
-            store.dispatchSuspend(CounterAction.Increment)
+            store.dispatch(CounterAction.Increment)
 
             assertEquals(listOf("first", "second"), order)
             assertEquals(1, store.state.value.count)
@@ -55,13 +55,13 @@ class StoreTest {
     fun `middleware can forward additional actions`() =
         runTest {
             val logging =
-                Middleware<CounterState, CounterAction> { _, action, next ->
+                Middleware<CounterState, CounterAction, DummyEffect> { _, action, next ->
                     next(CounterAction.Log("before $action"))
                     next(action)
                 }
-            val store = Store(CounterState(), counterReducer, listOf(logging), this)
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(logging), scope = this)
 
-            store.dispatchSuspend(CounterAction.Increment)
+            store.dispatch(CounterAction.Increment)
 
             assertEquals(1, store.state.value.count)
             assertEquals(listOf("before Increment"), store.state.value.log)
@@ -70,10 +70,10 @@ class StoreTest {
     @Test
     fun `middleware can swallow an action`() =
         runTest {
-            val blocking = Middleware<CounterState, CounterAction> { _, _, _ -> }
-            val store = Store(CounterState(), counterReducer, listOf(blocking), this)
+            val blocking = Middleware<CounterState, CounterAction, DummyEffect> { _, _, _ -> }
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(blocking), scope = this)
 
-            store.dispatchSuspend(CounterAction.Increment)
+            store.dispatch(CounterAction.Increment)
 
             assertEquals(0, store.state.value.count)
         }
@@ -83,13 +83,13 @@ class StoreTest {
         runTest {
             var seen = -1
             val observer =
-                Middleware<CounterState, CounterAction> { getState, action, next ->
+                Middleware<CounterState, CounterAction, DummyEffect> { store, action, next ->
                     next(action)
-                    seen = getState().count
+                    seen = store.state.value.count
                 }
-            val store = Store(CounterState(), counterReducer, listOf(observer), this)
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(observer), scope = this)
 
-            store.dispatchSuspend(CounterAction.Add(3))
+            store.dispatch(CounterAction.Add(3))
 
             assertEquals(3, seen)
         }
@@ -97,9 +97,9 @@ class StoreTest {
     @Test
     fun `concurrent dispatches do not lose updates`() =
         runTest {
-            val store = Store(CounterState(), counterReducer, scope = this)
+            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, scope = this)
 
-            List(100) { async { store.dispatchSuspend(CounterAction.Increment) } }.awaitAll()
+            List(100) { async { store.dispatch(CounterAction.Increment) } }.awaitAll()
 
             assertEquals(100, store.state.value.count)
         }

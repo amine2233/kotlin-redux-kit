@@ -8,7 +8,7 @@ class TestStoreTest {
     @Test
     fun `records every state and action`() =
         runTest {
-            val store = TestStore(CounterState(), counterReducer)
+            val store = TestStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer)
 
             store.dispatch(CounterAction.Increment)
             store.dispatch(CounterAction.Increment)
@@ -21,7 +21,7 @@ class TestStoreTest {
     @Test
     fun `runs middlewares and records forwarded actions`() =
         runTest {
-            val store = TestStore(CounterState(), counterReducer, listOf(loadMiddleware))
+            val store = TestStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(loadMiddleware))
 
             store.dispatch(CounterAction.LoadRequested)
 
@@ -33,7 +33,7 @@ class TestStoreTest {
     @Test
     fun `state flow mirrors the store`() =
         runTest {
-            val store = TestStore(CounterState(), counterReducer)
+            val store = TestStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer)
 
             store.dispatch(CounterAction.Increment)
 

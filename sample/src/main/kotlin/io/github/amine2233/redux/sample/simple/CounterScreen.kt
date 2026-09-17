@@ -19,11 +19,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.amine2233.redux.Store
+import io.github.amine2233.redux.DefaultStore
+import io.github.amine2233.redux.NoEffect
 
 /** The ViewModel owns the store; `viewModelScope` cancels in-flight middlewares with the screen. */
 class CounterViewModel : ViewModel() {
-    val store = Store(CounterState(), counterReducer, scope = viewModelScope)
+    val store = DefaultStore<CounterState, CounterAction, NoEffect>(CounterState(), counterReducer, scope = viewModelScope)
 }
 
 /** Route: store-aware. Screen: plain state + dispatch, previewable without a store. */

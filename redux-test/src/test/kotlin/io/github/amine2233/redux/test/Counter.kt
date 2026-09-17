@@ -34,7 +34,7 @@ val counterReducer =
 
 /** Turns `LoadRequested` into `LoadStarted` then, after a delay, `LoadSucceeded(42)`. */
 val loadMiddleware =
-    Middleware<CounterState, CounterAction> { _, action, next ->
+    Middleware<CounterState, CounterAction, DummyEffect> { _, action, next ->
         if (action == CounterAction.LoadRequested) {
             next(CounterAction.LoadStarted)
             delay(100)
