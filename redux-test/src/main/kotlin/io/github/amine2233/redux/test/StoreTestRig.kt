@@ -11,7 +11,7 @@ import kotlinx.coroutines.test.runCurrent
 
 public class StoreTestRig<S, A : Action, E : Effect>(
     public val store: Store<S, A, E>,
-    public val testScope: TestScope
+    public val testScope: TestScope,
 ) {
     public val recordedStates: MutableList<S> = mutableListOf()
     public val recordedEffects: MutableList<E> = mutableListOf()

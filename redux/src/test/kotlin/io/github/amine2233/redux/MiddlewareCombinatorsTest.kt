@@ -67,7 +67,15 @@ class MiddlewareCombinatorsTest {
     @Test
     fun `keyed addresses the entry carried by the action and passes unknown keys through`() =
         runTest {
-            val store = makeStore(logging.keyed(countersLens, keyedPrism), initial = AppState(counters = mapOf("a" to CounterState(count = 2))))
+            val store =
+                makeStore(
+                    logging.keyed(countersLens, keyedPrism),
+                    initial =
+                        AppState(
+                            counters =
+                                mapOf("a" to CounterState(count = 2)),
+                        ),
+                )
             store.dispatch(AppAction.Keyed("a", CounterAction.Increment))
             store.dispatch(AppAction.Keyed("missing", CounterAction.Increment))
             assertEquals(mapOf("a" to CounterState(count = 3, log = listOf("count=2"))), store.state.value.counters)
@@ -77,7 +85,10 @@ class MiddlewareCombinatorsTest {
     fun `offset addresses the element carried by the action and passes out-of-range indices through`() =
         runTest {
             val store =
-                makeStore(logging.offset(listLens, indexedPrism), initial = AppState(list = listOf(CounterState(), CounterState(count = 8))))
+                makeStore(
+                    logging.offset(listLens, indexedPrism),
+                    initial = AppState(list = listOf(CounterState(), CounterState(count = 8))),
+                )
             store.dispatch(AppAction.Indexed(1, CounterAction.Increment))
             store.dispatch(AppAction.Indexed(5, CounterAction.Increment))
             assertEquals(listOf(CounterState(), CounterState(count = 9, log = listOf("count=8"))), store.state.value.list)

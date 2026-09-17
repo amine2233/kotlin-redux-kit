@@ -1,10 +1,10 @@
 package io.github.amine2233.redux.test
 
 import io.github.amine2233.redux.Action
+import io.github.amine2233.redux.DefaultStore
 import io.github.amine2233.redux.Effect
 import io.github.amine2233.redux.Middleware
 import io.github.amine2233.redux.Reducer
-import io.github.amine2233.redux.DefaultStore
 
 /**
  * Runs the middleware in isolation against a fixed [state] and returns the actions it forwarded
@@ -15,11 +15,11 @@ public suspend fun <State, A : Action, E : Effect> Middleware<State, A, E>.forwa
     action: A,
 ): List<A> {
     val forwarded = mutableListOf<A>()
-    
+
     // Create a dummy store just for testing the middleware forwarding
     val dummyReducer = Reducer<State, A> { s, _ -> s }
     val store = DefaultStore<State, A, E>(state, dummyReducer)
-    
+
     intercept(store, action) { forwarded += it }
     return forwarded.toList()
 }

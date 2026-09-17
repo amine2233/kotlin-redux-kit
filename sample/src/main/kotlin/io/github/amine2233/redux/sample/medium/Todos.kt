@@ -1,11 +1,10 @@
 package io.github.amine2233.redux.sample.medium
 
 import io.github.amine2233.redux.Action
-import io.github.amine2233.redux.NoEffect
-import io.github.amine2233.redux.Store
-
 import io.github.amine2233.redux.Middleware
+import io.github.amine2233.redux.NoEffect
 import io.github.amine2233.redux.Reducer
+import io.github.amine2233.redux.Store
 import kotlinx.coroutines.delay
 
 /**
@@ -135,7 +134,6 @@ class FakeTodoRepository : TodoRepository {
     }
 }
 
-
 class TodosMiddleware(
     private val repository: TodoRepository,
 ) : Middleware<TodosState, TodosAction, NoEffect> {
@@ -153,7 +151,9 @@ class TodosMiddleware(
             }
 
             TodosAction.AddRequested -> {
-                val title = store.state.value.draft.trim()
+                val title =
+                    store.state.value.draft
+                        .trim()
                 if (title.isEmpty()) return
                 next(TodosAction.Added(repository.create(title)))
             }

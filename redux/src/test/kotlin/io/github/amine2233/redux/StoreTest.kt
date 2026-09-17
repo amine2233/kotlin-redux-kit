@@ -43,7 +43,8 @@ class StoreTest {
                     order += "second"
                     next(action)
                 }
-            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(first, second), scope = this)
+            val store =
+                DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(first, second), scope = this)
 
             store.dispatch(CounterAction.Increment)
 
@@ -59,7 +60,8 @@ class StoreTest {
                     next(CounterAction.Log("before $action"))
                     next(action)
                 }
-            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(logging), scope = this)
+            val store =
+                DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(logging), scope = this)
 
             store.dispatch(CounterAction.Increment)
 
@@ -71,7 +73,8 @@ class StoreTest {
     fun `middleware can swallow an action`() =
         runTest {
             val blocking = Middleware<CounterState, CounterAction, DummyEffect> { _, _, _ -> }
-            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(blocking), scope = this)
+            val store =
+                DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(blocking), scope = this)
 
             store.dispatch(CounterAction.Increment)
 
@@ -87,7 +90,8 @@ class StoreTest {
                     next(action)
                     seen = store.state.value.count
                 }
-            val store = DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(observer), scope = this)
+            val store =
+                DefaultStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(observer), scope = this)
 
             store.dispatch(CounterAction.Add(3))
 

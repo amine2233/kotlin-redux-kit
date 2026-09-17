@@ -34,7 +34,14 @@ import io.github.amine2233.redux.NoEffect
 class TodosViewModel(
     repository: TodoRepository,
 ) : ViewModel() {
-    val store = DefaultStore<TodosState, TodosAction, NoEffect>(TodosState(), todosReducer, listOf(TodosMiddleware(repository)), emptyList(), viewModelScope)
+    val store =
+        DefaultStore<TodosState, TodosAction, NoEffect>(
+            TodosState(),
+            todosReducer,
+            listOf(TodosMiddleware(repository)),
+            emptyList(),
+            viewModelScope,
+        )
 }
 
 @Composable

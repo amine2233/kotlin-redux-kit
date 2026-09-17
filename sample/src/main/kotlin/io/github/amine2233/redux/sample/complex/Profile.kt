@@ -1,11 +1,10 @@
 package io.github.amine2233.redux.sample.complex
 
 import io.github.amine2233.redux.Action
-import io.github.amine2233.redux.NoEffect
-import io.github.amine2233.redux.Store
-
 import io.github.amine2233.redux.Middleware
+import io.github.amine2233.redux.NoEffect
 import io.github.amine2233.redux.Reducer
+import io.github.amine2233.redux.Store
 import kotlinx.coroutines.delay
 
 /**
@@ -38,14 +37,18 @@ val profileReducer =
         }
     }
 
-
 /** Uses `store.state.value` — only possible because `optional()` guarantees a non-null slice here. */
-val profileMiddleware = object : Middleware<ProfileState, ProfileAction, NoEffect> {
-    override suspend fun intercept(store: Store<ProfileState, ProfileAction, NoEffect>, action: ProfileAction, next: suspend (ProfileAction) -> Unit) {
-        if (action != ProfileAction.RefreshRequested) return next(action)
-        next(ProfileAction.RefreshStarted)
-        delay(600)
-        val current = store.state.value
-        next(ProfileAction.Refreshed(current.name, "${current.name.lowercase()}+${System.currentTimeMillis() % 1000}@example.com"))
+val profileMiddleware =
+    object : Middleware<ProfileState, ProfileAction, NoEffect> {
+        override suspend fun intercept(
+            store: Store<ProfileState, ProfileAction, NoEffect>,
+            action: ProfileAction,
+            next: suspend (ProfileAction) -> Unit,
+        ) {
+            if (action != ProfileAction.RefreshRequested) return next(action)
+            next(ProfileAction.RefreshStarted)
+            delay(600)
+            val current = store.state.value
+            next(ProfileAction.Refreshed(current.name, "${current.name.lowercase()}+${System.currentTimeMillis() % 1000}@example.com"))
+        }
     }
-}

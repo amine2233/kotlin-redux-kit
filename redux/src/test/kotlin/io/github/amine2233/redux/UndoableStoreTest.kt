@@ -72,7 +72,14 @@ class UndoableStoreTest {
                     next(action)
                     observed = innerStore.state.value.count
                 }
-            val store = UndoableStore<CounterState, CounterAction, DummyEffect>(CounterState(), counterReducer, listOf(observer), emptyList(), scope = this)
+            val store =
+                UndoableStore<CounterState, CounterAction, DummyEffect>(
+                    CounterState(),
+                    counterReducer,
+                    listOf(observer),
+                    emptyList(),
+                    scope = this,
+                )
 
             store.dispatch(CounterAction.Add(3))
             assertEquals(3, observed)

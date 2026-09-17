@@ -1,10 +1,24 @@
 package io.github.amine2233.redux
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 public interface Store<S, A : Action, E : Effect> {
     public val state: StateFlow<S>
@@ -12,12 +26,15 @@ public interface Store<S, A : Action, E : Effect> {
     public val scope: CoroutineScope
 
     public fun dispatch(action: A)
+
     public fun emitEffect(effect: E)
-    
+
     public fun dispatchFrom(flow: Flow<A>): Job
+
     public fun dispatchFrom(channel: ReceiveChannel<A>): Job
-    
+
     public fun <SubState> select(lens: Lens<S, SubState>): StateFlow<SubState>
+
     public fun close()
 }
 
@@ -27,19 +44,19 @@ public class DefaultStore<S, A : Action, E : Effect>(
     private val middlewares: List<Middleware<S, A, E>> = emptyList(),
     private val services: List<StoreService<S, A, E>> = emptyList(),
     override val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-    bufferCapacity: Int = 64
+    bufferCapacity: Int = 64,
 ) : Store<S, A, E> {
-
     private val _state = MutableStateFlow(initialState)
     override val state: StateFlow<S> = _state.asStateFlow()
 
     private val _effects = Channel<E>(Channel.BUFFERED)
     override val effects: Flow<E> = _effects.receiveAsFlow()
 
-    private val actionQueue = Channel<A>(
-        capacity = bufferCapacity,
-        onBufferOverflow = BufferOverflow.SUSPEND
-    )
+    private val actionQueue =
+        Channel<A>(
+            capacity = bufferCapacity,
+            onBufferOverflow = BufferOverflow.SUSPEND,
+        )
 
     init {
         scope.launch {
@@ -50,9 +67,11 @@ public class DefaultStore<S, A : Action, E : Effect>(
         }
 
         services.forEach { service ->
-            scope.launch(CoroutineExceptionHandler { _, throwable ->
-                println("Error in StoreService: ${throwable.message}")
-            }) {
+            scope.launch(
+                CoroutineExceptionHandler { _, throwable ->
+                    println("Error in StoreService: ${throwable.message}")
+                },
+            ) {
                 service.start(this@DefaultStore, this)
             }
         }
@@ -71,26 +90,27 @@ public class DefaultStore<S, A : Action, E : Effect>(
         }
     }
 
-    override fun dispatchFrom(flow: Flow<A>): Job = scope.launch {
-        flow.collect { dispatch(it) }
-    }
-
-    override fun dispatchFrom(channel: ReceiveChannel<A>): Job = scope.launch {
-        for (action in channel) {
-            dispatch(action)
+    override fun dispatchFrom(flow: Flow<A>): Job =
+        scope.launch {
+            flow.collect { dispatch(it) }
         }
-    }
 
-    override fun <SubState> select(lens: Lens<S, SubState>): StateFlow<SubState> {
-        return state
+    override fun dispatchFrom(channel: ReceiveChannel<A>): Job =
+        scope.launch {
+            for (action in channel) {
+                dispatch(action)
+            }
+        }
+
+    override fun <SubState> select(lens: Lens<S, SubState>): StateFlow<SubState> =
+        state
             .map { lens.get(it) }
             .distinctUntilChanged()
             .stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = lens.get(state.value)
+                initialValue = lens.get(state.value),
             )
-    }
 
     override fun close() {
         services.forEach { it.stop() }
